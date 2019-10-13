@@ -5,7 +5,7 @@ import (
     "reflect"
     "strconv"
 
-    "Serialize/codec"
+    "github.com/AMan4Technology/Serialize/codec"
 )
 
 func sliceSerialize(value interface{}, tag string) string {

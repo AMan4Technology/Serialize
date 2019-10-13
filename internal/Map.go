@@ -5,7 +5,7 @@ import (
     "fmt"
     "reflect"
 
-    "Serialize/codec"
+    "github.com/AMan4Technology/Serialize/codec"
 )
 
 func mapSerialize(value interface{}, tag string) string {

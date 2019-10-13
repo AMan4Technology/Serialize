@@ -4,7 +4,7 @@ import (
     "reflect"
     "strings"
 
-    "Serialize/codec"
+    "github.com/AMan4Technology/Serialize/codec"
 )
 
 const Ptr = "*"

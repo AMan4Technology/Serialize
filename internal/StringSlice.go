@@ -5,7 +5,7 @@ import (
     "strconv"
     "strings"
 
-    "Serialize/codec"
+    "github.com/AMan4Technology/Serialize/codec"
 )
 
 func init() {

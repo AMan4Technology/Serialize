@@ -4,7 +4,7 @@ import (
     "fmt"
     "reflect"
 
-    "Serialize/codec"
+    "github.com/AMan4Technology/Serialize/codec"
 )
 
 func StructFieldWithName(val reflect.Value, tag string) (fieldWithName map[string]reflect.Value) {

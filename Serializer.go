@@ -1,7 +1,7 @@
 package serialize
 
 import (
-    "Serialize/internal"
+    "github.com/AMan4Technology/Serialize/internal"
 )
 
 func Serialize(value interface{}, codecID, name, tag string) (data string, err error) {

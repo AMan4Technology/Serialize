@@ -3,7 +3,7 @@ package serialize
 import (
     "reflect"
 
-    "Serialize/internal"
+    "github.com/AMan4Technology/Serialize/internal"
 )
 
 func Register(tp reflect.Type, s Serializer, update bool) (err error) {

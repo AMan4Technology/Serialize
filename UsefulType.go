@@ -1,5 +1,5 @@
 package serialize
 
-import "Serialize/internal"
+import "github.com/AMan4Technology/Serialize/internal"
 
 type StringSlice = internal.StringSlice
