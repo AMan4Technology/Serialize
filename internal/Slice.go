@@ -26,7 +26,11 @@ func sliceSerialize(value interface{}, tag string) string {
 }
 
 func sliceDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
-    val := reflect.New(tp).Elem()
+    var (
+        val    = reflect.New(tp).Elem()
+        elemTp = val.Type().Elem()
+        isPtr  = elemTp.Kind() == reflect.Ptr
+    )
     sliceData, _, err := Deserialize(data, codec.String, tag)
     if err != nil {
         return val.Interface(), err
@@ -37,7 +41,13 @@ func sliceDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
         if err != nil {
             fmt.Printf("parse %s failed, error: %e", elem, err)
         }
-        reflect.Append(val, reflect.ValueOf(value))
+        if !isPtr {
+            reflect.Append(val, reflect.ValueOf(value))
+            continue
+        }
+        e := reflect.New(elemTp.Elem())
+        e.Elem().Set(reflect.ValueOf(value))
+        reflect.Append(val, e)
     }
     return val.Interface(), nil
 }

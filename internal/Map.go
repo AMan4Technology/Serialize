@@ -51,7 +51,13 @@ func mapSerialize(value interface{}, tag string) string {
 }
 
 func mapDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
-    val := reflect.New(tp).Elem()
+    var (
+        val    = reflect.New(tp).Elem()
+        kTp    = val.Type().Key()
+        kIsPtr = kTp.Kind() == reflect.Ptr
+        vTp    = val.Type().Elem()
+        VIsPtr = vTp.Kind() == reflect.Ptr
+    )
     mapData, _, err := Deserialize(data, codec.String, tag)
     if err != nil {
         return val.Interface(), err
@@ -81,7 +87,18 @@ func mapDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
         if err != nil {
             continue
         }
-        val.SetMapIndex(reflect.ValueOf(k), reflect.ValueOf(v))
+        kVal, vVal := reflect.ValueOf(k), reflect.ValueOf(v)
+        if kIsPtr {
+            k := reflect.New(kTp.Elem())
+            k.Elem().Set(kVal)
+            kVal = k
+        }
+        if VIsPtr {
+            v := reflect.New(vTp.Elem())
+            v.Elem().Set(kVal)
+            vVal = v
+        }
+        val.SetMapIndex(kVal, vVal)
     }
     return val.Interface(), nil
 }

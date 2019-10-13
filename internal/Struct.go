@@ -63,9 +63,15 @@ func structDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
             continue
         }
         field := fieldWithName[name]
-        if field.CanSet() {
-            field.Set(reflect.ValueOf(i))
+        if !field.CanSet() {
+            continue
         }
+        if field.Kind() != reflect.Ptr {
+            field.Set(reflect.ValueOf(i))
+            continue
+        }
+        field.Set(reflect.New(field.Type().Elem()))
+        field.Elem().Set(reflect.ValueOf(i))
     }
     return val.Interface(), nil
 }

@@ -2,9 +2,12 @@ package internal
 
 import (
     "reflect"
+    "strings"
 
     "Serialize/codec"
 )
+
+const Ptr = "*"
 
 func Serialize(value interface{}, codecID, name, tag string) (data string, err error) {
     tpID, data, err := serialize(value, tag)
@@ -23,10 +26,14 @@ type Serializer interface {
 }
 
 func serialize(value interface{}, tag string) (tpID, data string, err error) {
-    tp := reflect.TypeOf(value)
-    tpID = IDOf(tp)
+    val := reflect.ValueOf(value)
+    if val.Kind() == reflect.Ptr {
+        tpID, data, err = serialize(val.Elem().Interface(), tag)
+        return Ptr + tpID, data, err
+    }
+    tpID = IDOf(val.Type())
     if serializer := SerializerWithID[tpID]; serializer == nil {
-        tpID = tp.Kind().String()
+        tpID = val.Kind().String()
     } else if serializer.Serializer != nil {
         data, err = serializer.Serialize(value, tag)
         return
@@ -36,6 +43,9 @@ func serialize(value interface{}, tag string) (tpID, data string, err error) {
 }
 
 func deserialize(tpID, data, tag string) (interface{}, error) {
+    if strings.HasPrefix(tpID, Ptr) {
+        return deserialize(tpID[1:], data, tag)
+    }
     if serializer := SerializerWithID[tpID]; serializer != nil {
         if serializer.Serializer != nil {
             return serializer.Deserialize(data, tag)
