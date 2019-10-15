@@ -19,14 +19,9 @@ func mapSerialize(value interface{}, tag string) string {
     for i := 0; iter.Next(); i++ {
         k := iter.Key()
         v := iter.Value()
-        key, err := Serialize(k.Interface(), codec.String, "", tag)
-        if err != nil {
-            fmt.Println(err)
-            continue
-        }
+        key, _ := Serialize(k.Interface(), codec.String, "", tag)
         value, err := Serialize(v.Interface(), codec.String, "", tag)
         if err != nil {
-            fmt.Println(err)
             continue
         }
         keys[i] = key
@@ -50,57 +45,52 @@ func mapSerialize(value interface{}, tag string) string {
     return mapData
 }
 
-func mapDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
+func mapDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{}, error) {
     var (
-        val    = reflect.New(tp).Elem()
-        kTp    = val.Type().Key()
-        kIsPtr = kTp.Kind() == reflect.Ptr
-        vTp    = val.Type().Elem()
-        VIsPtr = vTp.Kind() == reflect.Ptr
+        result = reflect.New(tp)
+        val    = result.Elem()
     )
+    if !isPtr {
+        result = val
+    }
     mapData, _, err := Deserialize(data, codec.String, tag)
     if err != nil {
-        return val.Interface(), err
+        return result.Interface(), err
     }
     keysAndValues := mapData.(StringSlice)
     if len(keysAndValues) != 2 {
-        return val.Interface(), errors.New("valid data keys&values")
+        return result.Interface(), errors.New("valid data keys&values")
     }
     keys, _, err := Deserialize(keysAndValues[0], codec.String, tag)
     if err != nil {
-        return val.Interface(), err
+        return result.Interface(), err
     }
     values, _, err := Deserialize(keysAndValues[1], codec.String, tag)
     if err != nil {
-        return val.Interface(), err
+        return result.Interface(), err
     }
     var (
         keySlice   = keys.(StringSlice)
         valueSlice = values.(StringSlice)
+        mapValue   = reflect.MakeMap(tp)
     )
     for i, key := range keySlice {
         k, _, err := Deserialize(key, codec.String, tag)
+        kVal := reflect.ValueOf(k)
         if err != nil {
-            continue
+            if err.Error() != Nil {
+                continue
+            }
+            kVal = reflect.New(tp.Key()).Elem()
         }
         v, _, err := Deserialize(valueSlice[i], codec.String, tag)
         if err != nil {
             continue
         }
-        kVal, vVal := reflect.ValueOf(k), reflect.ValueOf(v)
-        if kIsPtr {
-            k := reflect.New(kTp.Elem())
-            k.Elem().Set(kVal)
-            kVal = k
-        }
-        if VIsPtr {
-            v := reflect.New(vTp.Elem())
-            v.Elem().Set(kVal)
-            vVal = v
-        }
-        val.SetMapIndex(kVal, vVal)
+        mapValue.SetMapIndex(kVal, reflect.ValueOf(v))
     }
-    return val.Interface(), nil
+    val.Set(mapValue)
+    return result.Interface(), nil
 }
 
 func mapDeserializeWith(data, tag string) (mapValue map[interface{}]interface{}, err error) {
@@ -127,7 +117,7 @@ func mapDeserializeWith(data, tag string) (mapValue map[interface{}]interface{},
     mapValue = make(map[interface{}]interface{}, len(keySlice))
     for i, key := range keySlice {
         k, _, err := Deserialize(key, codec.String, tag)
-        if err != nil {
+        if err != nil && err.Error() != Nil {
             continue
         }
         v, _, err := Deserialize(valueSlice[i], codec.String, tag)

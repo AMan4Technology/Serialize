@@ -15,20 +15,20 @@ func defaultSerialize(value interface{}, tag string) (string, error) {
     }
 }
 
-func defaultDeserialize(tp reflect.Type, data string, tag string) (interface{}, error) {
+func defaultDeserialize(tp reflect.Type, data string, tag string, isPtr bool) (interface{}, error) {
     switch kind := tp.Kind().String(); kind {
     case reflect.Slice.String(), reflect.Array.String():
-        return sliceDeserialize(tp, data, tag)
+        return sliceDeserialize(tp, data, tag, isPtr)
     case reflect.Map.String():
-        return mapDeserialize(tp, data, tag)
+        return mapDeserialize(tp, data, tag, isPtr)
     case reflect.Struct.String():
-        return structDeserialize(tp, data, tag)
+        return structDeserialize(tp, data, tag, isPtr)
     default:
-        return baseDeserialize(tp, data)
+        return baseDeserialize(tp, data, isPtr)
     }
 }
 
-func defaultDeserializeWith(kind, data, tag string) (interface{}, error) {
+func defaultDeserializeWith(kind, data, tag string, isPtr bool) (interface{}, error) {
     switch kind {
     case reflect.Slice.String(), reflect.Array.String():
         return sliceDeserializeWith(data, tag)
@@ -37,6 +37,6 @@ func defaultDeserializeWith(kind, data, tag string) (interface{}, error) {
     case reflect.Struct.String():
         return structDeserializeWithMap(data, tag)
     default:
-        return baseDeserializeWith(kind, data)
+        return baseDeserializeWith(kind, data, isPtr)
     }
 }

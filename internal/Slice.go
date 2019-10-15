@@ -25,31 +25,29 @@ func sliceSerialize(value interface{}, tag string) string {
     return sliceData
 }
 
-func sliceDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
+func sliceDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{}, error) {
     var (
-        val    = reflect.New(tp).Elem()
-        elemTp = val.Type().Elem()
-        isPtr  = elemTp.Kind() == reflect.Ptr
+        result = reflect.New(tp)
+        val    = result.Elem()
     )
+    if !isPtr {
+        result = val
+    }
     sliceData, _, err := Deserialize(data, codec.String, tag)
     if err != nil {
-        return val.Interface(), err
+        return result.Interface(), err
     }
     slice := sliceData.(StringSlice)
-    for _, elem := range slice {
+    sliceVal := reflect.MakeSlice(tp, len(slice), len(slice))
+    for i, elem := range slice {
         value, _, err := Deserialize(elem, codec.String, tag)
         if err != nil {
-            fmt.Printf("parse %s failed, error: %e", elem, err)
-        }
-        if !isPtr {
-            reflect.Append(val, reflect.ValueOf(value))
             continue
         }
-        e := reflect.New(elemTp.Elem())
-        e.Elem().Set(reflect.ValueOf(value))
-        reflect.Append(val, e)
+        sliceVal.Index(i).Set(reflect.ValueOf(value))
     }
-    return val.Interface(), nil
+    val.Set(sliceVal)
+    return result.Interface(), nil
 }
 
 func sliceDeserializeWith(data, tag string) (sliceValue []interface{}, err error) {

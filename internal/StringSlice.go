@@ -12,7 +12,7 @@ func init() {
     _ = Register(reflect.TypeOf(StringSlice{}), StringSliceSerializer{}, false)
 }
 
-const Nil = "nil"
+const Nil = "<nil>"
 
 type StringSlice []string
 

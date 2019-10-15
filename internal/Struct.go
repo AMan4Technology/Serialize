@@ -37,7 +37,6 @@ func structSerialize(value interface{}, tag string) string {
         }
         data, err := Serialize(field.Interface(), codec.String, fieldName, tag)
         if err != nil {
-            fmt.Println(err)
             continue
         }
         fields = append(fields, data)
@@ -49,31 +48,31 @@ func structSerialize(value interface{}, tag string) string {
     return data
 }
 
-func structDeserialize(tp reflect.Type, data, tag string) (interface{}, error) {
-    val := reflect.New(tp).Elem()
+func structDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{}, error) {
+    var (
+        result = reflect.New(tp)
+        val    = result.Elem()
+    )
+    if !isPtr {
+        result = val
+    }
     fields, _, err := Deserialize(data, codec.String, tag)
     if err != nil {
-        return val.Interface(), err
+        return result.Interface(), err
     }
     fieldWithName := StructFieldWithName(val, tag)
     for _, data := range fields.(StringSlice) {
-        i, name, err := Deserialize(data, codec.String, tag)
+        value, name, err := Deserialize(data, codec.String, tag)
         if err != nil {
-            fmt.Println(err)
             continue
         }
         field := fieldWithName[name]
         if !field.CanSet() {
             continue
         }
-        if field.Kind() != reflect.Ptr {
-            field.Set(reflect.ValueOf(i))
-            continue
-        }
-        field.Set(reflect.New(field.Type().Elem()))
-        field.Elem().Set(reflect.ValueOf(i))
+        field.Set(reflect.ValueOf(value))
     }
-    return val.Interface(), nil
+    return result.Interface(), nil
 }
 
 func structDeserializeWithMap(data, tag string) (structValue map[string]interface{}, err error) {
@@ -86,7 +85,6 @@ func structDeserializeWithMap(data, tag string) (structValue map[string]interfac
     for _, data := range fieldSlice {
         value, name, err := Deserialize(data, codec.String, tag)
         if err != nil {
-            fmt.Println(err)
             continue
         }
         structValue[name] = value
