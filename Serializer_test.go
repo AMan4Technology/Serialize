@@ -9,7 +9,7 @@ import (
 )
 
 func init() {
-    _ = Register(reflect.TypeOf(my{}), nil, true)
+    _ = Register(reflect.TypeOf(mys{}), nil, true)
 }
 
 func TestSerialize(t *testing.T) {
@@ -19,16 +19,19 @@ func TestSerialize(t *testing.T) {
         A string `string:"a"`
         a int
     }{A: "wangting", a: 24}, codec.String, "data", "string"))
-    fmt.Println(Serialize(my{A: "WangTing", b: 1}, codec.String, "test", "string"))
-    fmt.Println(Serialize(&my{A: "WangTing", b: 1, C: new(string)}, codec.String, "test", "string"))
+    m := my{A: "WangTing", b: 1, C: new(string)}
+    fmt.Println(Serialize(m, codec.String, "m", "string"))
+    fmt.Println(Serialize(&m, codec.String, "pOfM", "string"))
+    fmt.Println(Serialize(mys{nil, &m}, codec.String, "mys", "string"))
 }
 
 func TestDeserialize(t *testing.T) {
     fmt.Println(Deserialize("slice|data|github.com/AMan4Technology/Serialize/internal.StringSlice|sliceData|3|7|int|0|17|int|1|27|int|2|3", codec.String, ""))
     fmt.Println(Deserialize("map|data|github.com/AMan4Technology/Serialize/internal.StringSlice|mapData|2|98|github.com/AMan4Technology/Serialize/internal.StringSlice|keys|3|9|string||b9|string||c9|string||a91|github.com/AMan4Technology/Serialize/internal.StringSlice|values|3|6|int||26|int||36|int||1", codec.String, ""))
     fmt.Println(Deserialize("struct|data|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|1|17|string|a|wangting", codec.String, "string"))
-    fmt.Println(Deserialize("github.com/AMan4Technology/Serialize.my|test|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|1|17|string|a|WangTing", codec.String, "string"))
-    fmt.Println(Deserialize("*github.com/AMan4Technology/Serialize.my|test|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
+    fmt.Println(Deserialize("github.com/AMan4Technology/Serialize.my|m|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
+    fmt.Println(Deserialize("*github.com/AMan4Technology/Serialize.my|pOfM|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
+    fmt.Println(Deserialize("github.com/AMan4Technology/Serialize.mys|mys|github.com/AMan4Technology/Serialize/internal.StringSlice|sliceData|2|0|143|*github.com/AMan4Technology/Serialize.my|1|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
 }
 
 func TestIDOf(t *testing.T) {
@@ -36,6 +39,8 @@ func TestIDOf(t *testing.T) {
     fmt.Println(IDOf(reflect.TypeOf(my{}.A)))
     fmt.Println(IDOf(reflect.TypeOf(my{}.C)))
 }
+
+type mys []*my
 
 type my struct {
     A string `string:"a"`
