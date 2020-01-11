@@ -2,18 +2,15 @@ package codec
 
 const Split = '|'
 
-func Encode(codec, typeID, name, value string) (data string) {
-    if typeID == "" {
-        return ""
-    }
+func Encode(codec, name, typeID, value string) (data string) {
     c := codecs[codec]
     if c == nil {
         c = codecs[String]
     }
-    return c.Encode(typeID, name, value)
+    return c.Encode(name, typeID, value)
 }
 
-func Decode(codec, data string) (typeID, name, value string) {
+func Decode(codec, data string) (name, typeID, value string) {
     if data == "" {
         return "", "", ""
     }
@@ -25,6 +22,6 @@ func Decode(codec, data string) (typeID, name, value string) {
 }
 
 type Codec interface {
-    Encode(typeID, name, value string) (data string)
-    Decode(data string) (typeID, name, value string)
+    Encode(name, typeID, value string) (data string)
+    Decode(data string) (name, typeID, value string)
 }

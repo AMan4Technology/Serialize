@@ -14,6 +14,10 @@ func IDOf(tp reflect.Type) string {
     return internal.IDOf(tp)
 }
 
+func StringFrom(value reflect.Value) string {
+    return internal.StringFrom(value)
+}
+
 func NumOfSerializers() int {
     return len(internal.SerializerWithID)
 }

@@ -18,7 +18,7 @@ type StringSlice []string
 
 type StringSliceSerializer struct{}
 
-func (StringSliceSerializer) Serialize(value interface{}, tag string) (string, error) {
+func (StringSliceSerializer) Serialize(value interface{}, tag, codecID string, varMap StringMap) (string, error) {
     stringSlice := value.(StringSlice)
     if stringSlice == nil {
         return Nil, nil
@@ -37,7 +37,7 @@ func (StringSliceSerializer) Serialize(value interface{}, tag string) (string, e
     return data.String(), nil
 }
 
-func (StringSliceSerializer) Deserialize(data string, tag string) (interface{}, error) {
+func (StringSliceSerializer) Deserialize(data string, tag, codecID string, varMap StringMap, ptrMap map[string]reflect.Value) (interface{}, error) {
     var stringSlice StringSlice
     if strings.EqualFold(data, Nil) {
         return stringSlice, nil

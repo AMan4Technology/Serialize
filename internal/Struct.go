@@ -20,49 +20,43 @@ func StructFieldWithName(val reflect.Value, tag string) (fieldWithName map[strin
     return
 }
 
-func structSerialize(value interface{}, tag string) string {
+func structSerialize(value reflect.Value, tag, codecID string, varMap StringMap) string {
     var (
-        val    = reflect.ValueOf(value)
-        length = val.NumField()
+        length = value.NumField()
         fields = make(StringSlice, 0, length)
     )
     for i := 0; i < length; i++ {
-        field := val.Field(i)
+        field := value.Field(i)
         if !field.CanInterface() {
             continue
         }
-        fieldName := val.Type().Field(i).Tag.Get(tag)
+        fieldName := value.Type().Field(i).Tag.Get(tag)
         if fieldName == "" {
-            fieldName = val.Type().Field(i).Name
+            fieldName = value.Type().Field(i).Name
         }
-        data, err := Serialize(field.Interface(), codec.String, fieldName, tag)
+        tpID, data, err := serialize(field, tag, codecID, varMap)
         if err != nil {
             continue
         }
-        fields = append(fields, data)
+        fields = append(fields, codec.Encode(codecID, fieldName, tpID, data))
     }
-    data, err := Serialize(fields, codec.String, "fields", tag)
+    data, err := SerializerWithID[StringSliceID].Serialize(fields, tag, codecID, varMap)
     if err != nil {
         fmt.Println(err)
     }
     return data
 }
 
-func structDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{}, error) {
-    var (
-        result = reflect.New(tp)
-        val    = result.Elem()
-    )
-    if !isPtr {
-        result = val
-    }
-    fields, _, err := Deserialize(data, codec.String, tag)
+func structDeserialize(tp reflect.Type, data, tag, codecID string, varMap StringMap, ptrMap map[string]reflect.Value) (result reflect.Value, err error) {
+    result = reflect.New(tp).Elem()
+    fields, err := SerializerWithID[StringSliceID].Deserialize(data, tag, codecID, varMap, ptrMap)
     if err != nil {
-        return result.Interface(), err
+        return
     }
-    fieldWithName := StructFieldWithName(val, tag)
+    fieldWithName := StructFieldWithName(result, tag)
     for _, data := range fields.(StringSlice) {
-        value, name, err := Deserialize(data, codec.String, tag)
+        name, typeID, value := codec.Decode(codecID, data)
+        val, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil {
             continue
         }
@@ -70,24 +64,25 @@ func structDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface
         if !field.CanSet() {
             continue
         }
-        field.Set(reflect.ValueOf(value))
+        field.Set(val)
     }
-    return result.Interface(), nil
+    return
 }
 
-func structDeserializeWithMap(data, tag string) (structValue map[string]interface{}, err error) {
-    fields, _, err := Deserialize(data, codec.String, tag)
+func structDeserializeWithMap(data, tag, codecID string, varMap StringMap, ptrMap map[string]reflect.Value) (result reflect.Value, err error) {
+    fields, err := SerializerWithID[StringSliceID].Deserialize(data, tag, codecID, varMap, ptrMap)
     if err != nil {
-        return nil, err
+        return
     }
     fieldSlice := fields.(StringSlice)
-    structValue = make(map[string]interface{}, len(fieldSlice))
+    structValue := make(map[string]interface{}, len(fieldSlice))
     for _, data := range fieldSlice {
-        value, name, err := Deserialize(data, codec.String, tag)
+        name, typeID, value := codec.Decode(codecID, data)
+        val, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil {
             continue
         }
-        structValue[name] = value
+        structValue[name] = val.Interface()
     }
-    return
+    return reflect.ValueOf(structValue), nil
 }

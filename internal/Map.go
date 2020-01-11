@@ -8,66 +8,66 @@ import (
     "github.com/AMan4Technology/Serialize/codec"
 )
 
-func mapSerialize(value interface{}, tag string) string {
+func mapSerialize(value reflect.Value, tag, codecID string, varMap StringMap) string {
     var (
-        val    = reflect.ValueOf(value)
-        length = val.Len()
+        length = value.Len()
         keys   = make(StringSlice, length)
         values = make(StringSlice, length)
-        iter   = val.MapRange()
+        iter   = value.MapRange()
     )
     for i := 0; iter.Next(); i++ {
         k := iter.Key()
         v := iter.Value()
-        key, _ := Serialize(k.Interface(), codec.String, "", tag)
-        value, err := Serialize(v.Interface(), codec.String, "", tag)
+        tpID, data, err := serialize(k, tag, codecID, varMap)
         if err != nil {
             continue
         }
+        key := codec.Encode(codecID, "", tpID, data)
+        tpID, data, err = serialize(v, tag, codecID, varMap)
+        if err != nil {
+            continue
+        }
+        value := codec.Encode(codecID, "", tpID, data)
         keys[i] = key
         values[i] = value
     }
     mapDataSlice := make(StringSlice, 2)
-    keysData, err := Serialize(keys, codec.String, "keys", tag)
+
+    data, err := SerializerWithID[StringSliceID].Serialize(keys, tag, codecID, varMap)
     if err != nil {
         fmt.Println(err)
     }
-    mapDataSlice[0] = keysData
-    valuesData, err := Serialize(values, codec.String, "values", tag)
+    mapDataSlice[0] = data
+
+    data, err = SerializerWithID[StringSliceID].Serialize(values, tag, codecID, varMap)
     if err != nil {
         fmt.Println(err)
     }
-    mapDataSlice[1] = valuesData
-    mapData, err := Serialize(mapDataSlice, codec.String, "mapData", tag)
+    mapDataSlice[1] = data
+
+    data, err = SerializerWithID[StringSliceID].Serialize(mapDataSlice, tag, codecID, varMap)
     if err != nil {
         fmt.Println(err)
     }
-    return mapData
+    return data
 }
 
-func mapDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{}, error) {
-    var (
-        result = reflect.New(tp)
-        val    = result.Elem()
-    )
-    if !isPtr {
-        result = val
-    }
-    mapData, _, err := Deserialize(data, codec.String, tag)
+func mapDeserialize(tp reflect.Type, data, tag, codecID string, varMap StringMap, ptrMap map[string]reflect.Value) (result reflect.Value, err error) {
+    mapData, err := SerializerWithID[StringSliceID].Deserialize(data, tag, codecID, varMap, ptrMap)
     if err != nil {
-        return result.Interface(), err
+        return
     }
     keysAndValues := mapData.(StringSlice)
     if len(keysAndValues) != 2 {
-        return result.Interface(), errors.New("valid data keys&values")
+        return result, errors.New("valid data keys&values")
     }
-    keys, _, err := Deserialize(keysAndValues[0], codec.String, tag)
+    keys, err := SerializerWithID[StringSliceID].Deserialize(keysAndValues[0], tag, codecID, varMap, ptrMap)
     if err != nil {
-        return result.Interface(), err
+        return
     }
-    values, _, err := Deserialize(keysAndValues[1], codec.String, tag)
+    values, err := SerializerWithID[StringSliceID].Deserialize(keysAndValues[1], tag, codecID, varMap, ptrMap)
     if err != nil {
-        return result.Interface(), err
+        return
     }
     var (
         keySlice   = keys.(StringSlice)
@@ -75,56 +75,58 @@ func mapDeserialize(tp reflect.Type, data, tag string, isPtr bool) (interface{},
         mapValue   = reflect.MakeMap(tp)
     )
     for i, key := range keySlice {
-        k, _, err := Deserialize(key, codec.String, tag)
-        kVal := reflect.ValueOf(k)
+        _, typeID, value := codec.Decode(codecID, key)
+        k, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil {
             if err.Error() != Nil {
                 continue
             }
-            kVal = reflect.New(tp.Key()).Elem()
+            k = reflect.New(tp.Key()).Elem()
         }
-        v, _, err := Deserialize(valueSlice[i], codec.String, tag)
+        _, typeID, value = codec.Decode(codecID, valueSlice[i])
+        v, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil {
             continue
         }
-        mapValue.SetMapIndex(kVal, reflect.ValueOf(v))
+        mapValue.SetMapIndex(k, v)
     }
-    val.Set(mapValue)
-    return result.Interface(), nil
+    return mapValue, nil
 }
 
-func mapDeserializeWith(data, tag string) (mapValue map[interface{}]interface{}, err error) {
-    mapData, _, err := Deserialize(data, codec.String, tag)
+func mapDeserializeWith(data, tag, codecID string, varMap StringMap, ptrMap map[string]reflect.Value) (result reflect.Value, err error) {
+    mapData, err := SerializerWithID[StringSliceID].Deserialize(data, tag, codecID, varMap, ptrMap)
     if err != nil {
-        return nil, err
+        return
     }
     keysAndValues := mapData.(StringSlice)
     if len(keysAndValues) != 2 {
-        return nil, errors.New("valid data keys&values")
+        return result, errors.New("valid data keys&values")
     }
-    keys, _, err := Deserialize(keysAndValues[0], codec.String, tag)
+    keys, err := SerializerWithID[StringSliceID].Deserialize(keysAndValues[0], tag, codecID, varMap, ptrMap)
     if err != nil {
-        return nil, err
+        return
     }
-    values, _, err := Deserialize(keysAndValues[1], codec.String, tag)
+    values, err := SerializerWithID[StringSliceID].Deserialize(keysAndValues[1], tag, codecID, varMap, ptrMap)
     if err != nil {
-        return nil, err
+        return
     }
     var (
         keySlice   = keys.(StringSlice)
         valueSlice = values.(StringSlice)
     )
-    mapValue = make(map[interface{}]interface{}, len(keySlice))
+    mapValue := make(map[interface{}]interface{}, len(keySlice))
     for i, key := range keySlice {
-        k, _, err := Deserialize(key, codec.String, tag)
+        _, typeID, value := codec.Decode(codecID, key)
+        k, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil && err.Error() != Nil {
             continue
         }
-        v, _, err := Deserialize(valueSlice[i], codec.String, tag)
+        _, typeID, value = codec.Decode(codecID, valueSlice[i])
+        v, err := deserialize(typeID, value, tag, codecID, varMap, ptrMap)
         if err != nil {
             continue
         }
-        mapValue[k] = v
+        mapValue[k.Interface()] = v.Interface()
     }
-    return
+    return reflect.ValueOf(mapValue), nil
 }

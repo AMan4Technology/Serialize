@@ -13,25 +13,25 @@ func init() {
 }
 
 func TestSerialize(t *testing.T) {
-    fmt.Println(Serialize([]int{1, 2, 3}, codec.String, "data", ""))
-    fmt.Println(Serialize(map[string]int{"a": 1, "b": 2, "c": 3}, codec.String, "data", ""))
+    fmt.Println(Serialize([]int{1, 2, 3}, "data", "", codec.String))
+    fmt.Println(Serialize(map[string]int{"a": 1, "b": 2, "c": 3}, "data", "", codec.String))
     fmt.Println(Serialize(struct {
         A string `string:"a"`
         a int
-    }{A: "wangting", a: 24}, codec.String, "data", "string"))
+    }{A: "wangting", a: 24}, "data", "string", codec.String))
     m := my{A: "WangTing", b: 1, C: new(string)}
-    fmt.Println(Serialize(m, codec.String, "m", "string"))
-    fmt.Println(Serialize(&m, codec.String, "pOfM", "string"))
-    fmt.Println(Serialize(mys{nil, &m}, codec.String, "mys", "string"))
+    fmt.Println(Serialize(m, "m", "string", codec.String))
+    fmt.Println(Serialize(&m, "pOfM", "string", codec.String))
+    fmt.Println(Serialize(mys{nil, &m}, "mys", "string", codec.String))
 }
 
 func TestDeserialize(t *testing.T) {
-    fmt.Println(Deserialize("slice|data|github.com/AMan4Technology/Serialize/internal.StringSlice|sliceData|3|7|int|0|17|int|1|27|int|2|3", codec.String, ""))
-    fmt.Println(Deserialize("map|data|github.com/AMan4Technology/Serialize/internal.StringSlice|mapData|2|98|github.com/AMan4Technology/Serialize/internal.StringSlice|keys|3|9|string||b9|string||c9|string||a91|github.com/AMan4Technology/Serialize/internal.StringSlice|values|3|6|int||26|int||36|int||1", codec.String, ""))
-    fmt.Println(Deserialize("struct|data|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|1|17|string|a|wangting", codec.String, "string"))
-    fmt.Println(Deserialize("github.com/AMan4Technology/Serialize.my|m|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
-    fmt.Println(Deserialize("*github.com/AMan4Technology/Serialize.my|pOfM|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
-    fmt.Println(Deserialize("github.com/AMan4Technology/Serialize.mys|mys|github.com/AMan4Technology/Serialize/internal.StringSlice|sliceData|2|0|143|*github.com/AMan4Technology/Serialize.my|1|github.com/AMan4Technology/Serialize/internal.StringSlice|fields|2|17|string|a|WangTing10|*string|C|", codec.String, "string"))
+    fmt.Println(Deserialize("2|29|target||data|slice|c00001048041|c000010480||3|7|0|int|17|1|int|27|2|int|3", "", codec.String))
+    fmt.Println(Deserialize("2|81|c000060750||2|35|3|9||string|a9||string|b9||string|c26|3|6||int|16||int|26||int|327|target||data|map|c000060750", "", codec.String))
+    fmt.Println(Deserialize("1|42|target||data|struct|1|17|a|string|wangting", "string", codec.String))
+    fmt.Println(Deserialize("2|20|c000046990|||string|95|target||m|github.com/AMan4Technology/Serialize.my|2|17|a|string|WangTing20|C|*string|c000046990", "string", codec.String))
+    fmt.Println(Deserialize("3|20|c000046990|||string|98|c000004760|||github.com/AMan4Technology/Serialize.my|2|17|a|string|WangTing20|C|*string|c00004699064|target||pOfM|*github.com/AMan4Technology/Serialize.my|c000004760", "string", codec.String))
+    fmt.Println(Deserialize("4|20|c000046990|||string|98|c000004760|||github.com/AMan4Technology/Serialize.my|2|17|a|string|WangTing20|C|*string|c00004699080|c000046c30||2|8|0|*ptr|053|1|*github.com/AMan4Technology/Serialize.my|c00000476063|target||mys|github.com/AMan4Technology/Serialize.mys|c000046c30", "string", codec.String))
 }
 
 func TestIDOf(t *testing.T) {

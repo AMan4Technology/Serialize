@@ -4,6 +4,7 @@ import (
     "errors"
     "fmt"
     "reflect"
+    "strconv"
     "strings"
 )
 
@@ -33,6 +34,14 @@ func IDOf(tp reflect.Type) string {
         return fmt.Sprintf("%s.%s", pkgPath, strings.TrimSpace(tp.Name()))
     }
     return tp.Kind().String()
+}
+
+func StringFrom(value reflect.Value) (ptr string) {
+    switch value.Kind() {
+    case reflect.Map, reflect.Ptr, reflect.Slice:
+        ptr = strconv.FormatUint(uint64(value.Pointer()), 16)
+    }
+    return
 }
 
 var SerializerWithID = make(map[string]*serializer)
